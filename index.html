@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pengantar Paket Cepat</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB, #ADD8E6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background-color: #6B8E23; /* Area permainan */
+            border: 5px solid #555;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: blue;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        #package {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: yellow;
+            border: 1px solid orange;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8em;
+        }
+
+        .destination {
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        /* Kita akan memposisikan restoran, stasiun, terminal di sini (mirip seperti sebelumnya) */
+        .restaurant { /* ... gaya restoran ... */ }
+        .train-station { /* ... gaya stasiun ... */ }
+        .bus-terminal { /* ... gaya terminal ... */ }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="player">🛵</div>
+        <div id="package">📦</div>
+        <div id="score">Skor: 0</div>
+        <div id="timer">Waktu: 30</div>
+
+        <div class="restaurant destination" data-type="restaurant">🍔</div>
+        <div class="train-station destination" data-type="train-station">🚉</div>
+        <div class="bus-terminal destination" data-type="bus-terminal">🚌</div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const player = document.getElementById('player');
+        const packageElement = document.getElementById('package');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const destinations = document.querySelectorAll('.destination');
+
+        let playerX = 50;
+        let playerY = 50;
+        let packageX = 200;
+        let packageY = 200;
+        let currentDestination = null;
+        let score = 0;
+        let timeLeft = 30;
+        let gameInterval;
+
+        // Posisi awal untuk tujuan (kita perlu sesuaikan agar terlihat di area game)
+        const destinationPositions = {
+            restaurant: { x: 600, y: 100 },
+            'train-station': { x: 100, y: 450 },
+            'bus-terminal': { x: 700, y: 400 }
+        };
+
+        function positionElement(element, x, y) {
+            element.style.left = x + 'px';
+            element.style.top = y + 'px';
+        }
+
+        function setupGame() {
+            positionElement(player, playerX, playerY);
+            positionElement(packageElement, packageX, packageY);
+
+            destinations.forEach(dest => {
+                const type = dest.dataset.type;
+                positionElement(dest, destinationPositions[type].x, destinationPositions[type].y);
+            });
+
+            pickNewDestination();
+            startTimer();
+        }
+
+        function pickNewDestination() {
+            const availableDestinations = Array.from(destinations);
+            const randomIndex = Math.floor(Math.random() * availableDestinations.length);
+            currentDestination = availableDestinations[randomIndex];
+            packageElement.textContent = '📦'; // Reset tampilan paket
+            positionElement(packageElement, playerX, playerY); // Paket ikut pemain di awal misi baru
+        }
+
+        function startTimer() {
+            clearInterval(gameInterval);
+            timeLeft = 30;
+            timerDisplay.textContent = 'Waktu: ' + timeLeft;
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = 'Waktu: ' + timeLeft;
+                if (timeLeft <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function gameOver() {
+            clearInterval(gameInterval);
+            alert('Waktu Habis! Skor Anda: ' + score);
+            score = 0;
+            scoreDisplay.textContent = 'Skor: ' + score;
+            playerX = 50;
+            playerY = 50;
+            setupGame();
+        }
+
+        function checkCollision(element1, element2) {
+            const rect1 = element1.getBoundingClientRect();
+            const rect2 = element2.getBoundingClientRect();
+            return !(rect1.right < rect2.left ||
+                     rect1.left > rect2.right ||
+                     rect1.bottom < rect2.top ||
+                     rect1.top > rect2.bottom);
+        }
+
+        function handleDelivery() {
+            if (currentDestination && checkCollision(player, currentDestination) && packageElement.textContent === '📦') {
+                score++;
+                scoreDisplay.textContent = 'Skor: ' + score;
+                packageElement.textContent = '✅'; // Tanda paket terkirim
+                setTimeout(pickNewDestination, 1500); // Beri jeda sebelum misi baru
+                startTimer(); // Reset timer untuk misi baru
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            const speed = 10;
+            switch (event.key) {
+                case 'ArrowLeft':
+                    playerX -= speed;
+                    break;
+                case 'ArrowRight':
+                    playerX += speed;
+                    break;
+                case 'ArrowUp':
+                    playerY -= speed;
+                    break;
+                case 'ArrowDown':
+                    playerY += speed;
+                    break;
+            }
+
+            // Batasi pergerakan pemain dalam area game
+            playerX = Math.max(0, Math.min(playerX, gameContainer.offsetWidth - player.offsetWidth));
+            playerY = Math.max(0, Math.min(playerY, gameContainer.offsetHeight - player.offsetHeight));
+
+            positionElement(player, playerX, playerY);
+            positionElement(packageElement, playerX, playerY); // Paket ikut pemain
+
+            handleDelivery();
+        });
+
+        setupGame();
+    </script>
+</body>
+</html>
